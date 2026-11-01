@@ -27,11 +27,6 @@ jobs:
           make -j$(nproc)
           make install_sw
 
-      - name: Apply Official EMU Patch
-        run: |
-          wget -q https://raw.githubusercontent.com/oscam-emu/oscam-emu/master/oscam_emu.patch -O oscam_emu.patch || true
-          patch -p1 < oscam_emu.patch || true
-
       - name: Compile OSCam Binary
         run: |
           make clean || true
@@ -59,3 +54,4 @@ jobs:
         with:
           name: oscam-sf8008-openatv8-emu
           path: bin_out/oscam-sf8008-openatv8-emu
+
