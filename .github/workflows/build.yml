@@ -1,4 +1,4 @@
-name: Build OSCam SF8008 OpenATV 8.0
+name: Build Full OSCam-EMU SF8008 (ICAM + Cryptoworks + libdvbrsa1)
 
 on:
   push:
@@ -27,17 +27,17 @@ jobs:
           make -j$(nproc)
           make install_sw
 
-      - name: Apply Official EMU Patch
+      - name: Apply Official EMU & libdvbrsa1 Patch
         run: |
           wget -q https://raw.githubusercontent.com/oscam-emu/oscam-emu/master/oscam_emu.patch -O oscam_emu.patch || true
           patch -p1 < oscam_emu.patch || true
 
-      - name: Compile OSCam Binary
+      - name: Compile Full OSCam Binary
         run: |
           make clean || true
           chmod +x config.sh || true
-          ./config.sh --disable CARDREADER_DB2COM WEBIF_SSL READER_CRYPTOWORKS || true
-          ./config.sh --enable WITH_EMU WITH_SOFTCAM || true
+          ./config.sh --disable CARDREADER_DB2COM WEBIF_SSL || true
+          ./config.sh --enable WITH_EMU WITH_SOFTCAM MODULE_STREAMRELAY HAVE_DVBAPI WITH_EXTENDED_CW READER_CRYPTOWORKS || true
           sed -i 's/#include <openssl\/bn.h>/#include "cscrypt\/bn.h"/g' reader-cryptoworks.c 2>/dev/null || true
           sed -i 's/SSLv3_server_method()/TLS_server_method()/g' module-webif-lib.c 2>/dev/null || true
           make CROSS_DIR=/usr/bin/ \
@@ -51,11 +51,11 @@ jobs:
       - name: Prepare Binary Artifact
         run: |
           mkdir -p bin_out
-          find Distribution/ . -maxdepth 2 -name "oscam*" -type f -executable -exec cp {} bin_out/oscam-sf8008-openatv8 \;
+          find Distribution/ . -maxdepth 2 -name "oscam*" -type f -executable -exec cp {} bin_out/oscam-sf8008-full \;
           ls -lh bin_out/
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-sf8008-openatv8-emu
-          path: bin_out/oscam-sf8008-openatv8
+          name: oscam-sf8008-full
+          path: bin_out/oscam-sf8008-full
