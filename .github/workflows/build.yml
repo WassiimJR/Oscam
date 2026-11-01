@@ -1,0 +1,46 @@
+name: Build OSCam SF8008 OpenATV 8.0
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ubuntu:20.04
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install ARM Cross-Compiler & OpenSSL Headers
+        run: |
+          apt-get update
+          apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf build-essential wget git libssl-dev libpcsclite-dev libusb-1.0-0-dev
+
+      - name: Build Static OpenSSL for ARMhf
+        run: |
+          wget -q https://github.com/openssl/openssl/archive/refs/tags/OpenSSL_1_1_1w.tar.gz
+          tar -xzf OpenSSL_1_1_1w.tar.gz
+          cd openssl-OpenSSL_1_1_1w
+          ./Configure linux-armv4 -march=armv7-a -mfpu=neon -mfloat-abi=hard --cross-compile-prefix=arm-linux-gnueabihf- --prefix=/tmp/openssl-armhf no-async no-shared
+          make -j$(nproc)
+          make install_sw
+
+      - name: Compile OSCam Binary
+        run: |
+          make clean || true
+          chmod +x config.sh || true
+          ./config.sh --disable READER_CRYPTOWORKS || true
+          make CROSS_DIR=/usr/bin/ \
+               CROSS=arm-linux-gnueabihf- \
+               USE_SSL=1 \
+               USE_LIBCRYPTO=1 \
+               EXTRA_FLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=hard -O2 -std=gnu99 -fcommon -Wno-error -I/tmp/openssl-armhf/include" \
+               EXTRA_LIBS="-L/tmp/openssl-armhf/lib -lssl -lcrypto -lpthread -ldl -lrt" \
+               CONF_DIR=/etc/tuxbox/config/oscam
+
+      - name: Prepare Binary Artifact
+        run: |
+          mkdir -p bin_out
+          find Distribution/ . -maxdepth 2 -name "oscam*" -type f -executable -exec cp {} bin_out/
