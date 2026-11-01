@@ -31,7 +31,7 @@ jobs:
         run: |
           make clean || true
           chmod +x config.sh || true
-          ./config.sh --disable READER_CRYPTOWORKS || true
+          ./config.sh --disable CARDREADER_DB2COM WEBIF_SSL CARDREADER_CRYPTOWORKS || true
           make CROSS_DIR=/usr/bin/ \
                CROSS=arm-linux-gnueabihf- \
                USE_SSL=1 \
@@ -43,4 +43,11 @@ jobs:
       - name: Prepare Binary Artifact
         run: |
           mkdir -p bin_out
-          find Distribution/ . -maxdepth 2 -name "oscam*" -type f -executable -exec cp {} bin_out/
+          find Distribution/ . -maxdepth 2 -name "oscam*" -type f -executable -exec cp {} bin_out/oscam-sf8008-openatv8 \;
+          ls -lh bin_out/
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oscam-sf8008-openatv8
+          path: bin_out/oscam-sf8008-openatv8
