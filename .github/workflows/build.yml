@@ -44,7 +44,7 @@ jobs:
                CROSS=arm-linux-gnueabihf- \
                USE_SSL=1 \
                USE_LIBCRYPTO=1 \
-               EXTRA_FLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=hard -O2 -std=gnu99 -fcommon -Wno-error -I/tmp/openssl-armhf/include" \
+               EXTRA_FLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=hard -O2 -std=gnu99 -fcommon -Wno-error -Duchar='unsigned char' -I/tmp/openssl-armhf/include" \
                EXTRA_LIBS="-L/tmp/openssl-armhf/lib -lssl -lcrypto -lpthread -ldl -lrt" \
                CONF_DIR=/etc/tuxbox/config/oscam
 
@@ -59,4 +59,3 @@ jobs:
         with:
           name: oscam-sf8008-streamboard
           path: bin_out/oscam-sf8008-streamboard
-
