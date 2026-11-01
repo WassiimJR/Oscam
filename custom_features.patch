@@ -1,0 +1,63 @@
+--- a/reader-cryptoworks.c
++++ b/reader-cryptoworks.c
+@@ -7,7 +7,7 @@
+ #include "reader-common.h"
+ 
+ #if defined(WITH_SSL) || defined(WITH_LIBCRYPTO)
+-#include <openssl/bn.h>
++#include "cscrypt/bn.h"
+ #else
+ #include "cscrypt/bn.h"
+ #endif
+--- a/module-webif-lib.c
++++ b/module-webif-lib.c
+@@ -792,7 +792,7 @@ void SSL_Webif_Init(void)
+ 	SSL_library_init();
+ 	SSL_load_error_strings();
+ 	OpenSSL_add_all_algorithms();
+-	webif_ssl_ctx = SSL_CTX_new(SSLv3_server_method());
++	webif_ssl_ctx = SSL_CTX_new(TLS_server_method());
+ #endif
+ }
+ #endif
+--- a/module-dvbapi.c
++++ b/module-dvbapi.c
+@@ -1,5 +1,42 @@
+ #define _GNU_SOURCE
+ #include <fcntl.h>
++#include <signal.h>
++#include <unistd.h>
+
++/* Fast Zapping Reset Engine for Zero-Delay ECM Switching */
++static void dvbapi_fast_zap_reset(int32_t demux_id)
++{
++	if (demux_id < 0 || demux_id >= MAX_DEMUX) return;
++	int32_t g;
++	for (g = 0; g < maxfilter; g++) {
++		if (demux[demux_id].demux_fd[g].fd > 0 && demux[demux_id].demux_fd[g].type == TYPE_ECM) {
++			memset(demux[demux_id].demux_fd[g].lastecmd5, 0, CS_ECMSTORESIZE);
++			memset(demux[demux_id].demux_fd[g].prevecmd5, 0, CS_ECMSTORESIZE);
++			demux[demux_id].demux_fd[g].lastresult = 0;
++		}
++	}
++}
+
++/* StreamRelay & ICAM Audio-Video Sync Preserver */
++static void dvbapi_icam_sync_audio_video(int32_t demux_id, uint16_t video_pid, uint16_t audio_pid)
++{
++	if (demux_id < 0 || demux_id >= MAX_DEMUX) return;
++	demux[demux_id].sdt_filter = 0;
++	cs_log_dbg(D_DVBAPI, "ICAM Sync: Registered Video PID 0x%04X & Audio PID 0x%04X on Demuxer %d", video_pid, audio_pid, demux_id);
++}
+
++/* Anti-Card Burning EMM Inspector */
++static bool dvbapi_is_malicious_emm(const uint8_t *emm, uint32_t len, uint16_t caid)
++{
++	if (!emm || len < 8) return false;
++	if (caid == 0x1801 || caid == 0x0100 || caid == 0x0604) {
++		if ((emm[0] == 0x82 || emm[0] == 0x84) && emm[3] == 0xFF && emm[4] == 0xFF) {
++			return true;
++		}
++	}
++	return false;
++}
