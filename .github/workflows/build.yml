@@ -27,11 +27,17 @@ jobs:
           make -j$(nproc)
           make install_sw
 
+      - name: Apply Official EMU Patch
+        run: |
+          wget -q https://raw.githubusercontent.com/oscam-emu/oscam-emu/master/oscam_emu.patch -O oscam_emu.patch || true
+          patch -p1 < oscam_emu.patch || true
+
       - name: Compile OSCam Binary
         run: |
           make clean || true
           chmod +x config.sh || true
           ./config.sh --disable CARDREADER_DB2COM WEBIF_SSL READER_CRYPTOWORKS || true
+          ./config.sh --enable WITH_EMU WITH_SOFTCAM || true
           sed -i 's/#include <openssl\/bn.h>/#include "cscrypt\/bn.h"/g' reader-cryptoworks.c 2>/dev/null || true
           sed -i 's/SSLv3_server_method()/TLS_server_method()/g' module-webif-lib.c 2>/dev/null || true
           make CROSS_DIR=/usr/bin/ \
@@ -51,5 +57,5 @@ jobs:
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-sf8008-openatv8
+          name: oscam-sf8008-openatv8-emu
           path: bin_out/oscam-sf8008-openatv8
