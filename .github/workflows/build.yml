@@ -1,4 +1,4 @@
-name: Build Full OSCam-EMU SF8008 (Unified Patch Build)
+name: Build OSCam SF8008 OpenATV 8.0
 
 on:
   push:
@@ -27,22 +27,14 @@ jobs:
           make -j$(nproc)
           make install_sw
 
-      - name: Apply Official EMU Patch
-        run: |
-          wget -q https://raw.githubusercontent.com/oscam-emu/oscam-emu/master/oscam_emu.patch -O oscam_emu.patch || true
-          patch -p1 < oscam_emu.patch || true
-
-      - name: Apply Custom Features Unified Patch
-        run: |
-          find . -type f \( -name "*.c" -o -name "*.h" \) -exec sed -i 's/<openssl\/bn.h>/ "cscrypt\/bn.h"/g' {} + || true
-          find . -type f \( -name "*.c" -o -name "*.h" \) -exec sed -i 's/SSLv3_server_method()/TLS_server_method()/g' {} + || true
-
-      - name: Compile Full OSCam Binary
+      - name: Compile OSCam Binary
         run: |
           make clean || true
           chmod +x config.sh || true
           ./config.sh --disable CARDREADER_DB2COM WEBIF_SSL || true
           ./config.sh --enable WITH_EMU WITH_SOFTCAM MODULE_STREAMRELAY HAVE_DVBAPI WITH_EXTENDED_CW READER_CRYPTOWORKS || true
+          find . -type f \( -name "*.c" -o -name "*.h" \) -exec sed -i 's/<openssl\/bn.h>/ "cscrypt\/bn.h"/g' {} + || true
+          find . -type f \( -name "*.c" -o -name "*.h" \) -exec sed -i 's/SSLv3_server_method()/TLS_server_method()/g' {} + || true
           make CROSS_DIR=/usr/bin/ \
                CROSS=arm-linux-gnueabihf- \
                USE_SSL=1 \
@@ -54,12 +46,11 @@ jobs:
       - name: Prepare Binary Artifact
         run: |
           mkdir -p bin_out
-          find Distribution/ . -maxdepth 2 -name "oscam*" -type f -executable -exec cp {} bin_out/oscam-sf8008-full \;
+          find Distribution/ . -maxdepth 2 -name "oscam*" -type f -executable -exec cp {} bin_out/oscam-sf8008-openatv8 \;
           ls -lh bin_out/
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-sf8008-full
-          path: bin_out/oscam-sf8008-full
-
+          name: oscam-sf8008-openatv8
+          path: bin_out/oscam-sf8008-openatv8
