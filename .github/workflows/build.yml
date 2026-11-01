@@ -31,7 +31,9 @@ jobs:
         run: |
           make clean || true
           chmod +x config.sh || true
-          ./config.sh --disable CARDREADER_DB2COM WEBIF_SSL CARDREADER_CRYPTOWORKS || true
+          ./config.sh --disable CARDREADER_DB2COM WEBIF_SSL READER_CRYPTOWORKS || true
+          sed -i 's/#include <openssl\/bn.h>/#include "cscrypt\/bn.h"/g' reader-cryptoworks.c 2>/dev/null || true
+          sed -i 's/SSLv3_server_method()/TLS_server_method()/g' module-webif-lib.c 2>/dev/null || true
           make CROSS_DIR=/usr/bin/ \
                CROSS=arm-linux-gnueabihf- \
                USE_SSL=1 \
